@@ -54,9 +54,7 @@ default-character-set='utf8'
 [random 50 character string]
 ```
 
-## 6. Configure MySQL and Apache
-
--- mysql --
+## 6. Configure MySQL
 
 ```
 sudo mysql_secure_installation utility
@@ -97,7 +95,7 @@ query = query.encode(errors='replace')
 
 ```
 
--- apache (no ssl cert) --
+## 7. Configure Apache (without SSL)
 
 /etc/apache2/sites-enabled/django.conf:
 
@@ -134,9 +132,48 @@ query = query.encode(errors='replace')
 </VirtualHost>
 
 ```
--- apache (with ssl cert) --
+## 8. Configure Apache (with SSL)
 
-/etc/apache2/sites-enabled/django.conf:
+Attaching a domain name is required to get an SSL certificate. To attach the domain name, just create an A record from the domain name to the IP address of the application.
+
+To get HTTPS working, first create the django.conf file described above. You can confirm that you have configured Apache correctly by adding the IP address of the application to ALLOWED\_HOSTS in the Django project's settings.py file. In order to get the site working with SSL, you need to do first edit this file slightly, and then install an SSL certificate. I have used certbot in the past and found it very quick and easy.
+
+### File Editing
+
+```
+In /etc/apache2/sites-enabled/django.conf:
+
+Change:
+
+ServerName IP_ADDRESS
+
+To:
+
+ServerName DOMAIN_NAME.com
+ServerAlias www.DOMAIN_NAME.com
+
+Then comment out the WSGI lines (registering the SSL cert will fail if you don't)
+```
+
+### Certbot
+
+#### Installation
+
+```
+sudo apt-get update
+sudo apt-get install software-properties-common
+sudo add-apt-repository universe
+sudo add-apt-repository ppa:certbot/certbot
+sudo apt-get update
+
+sudo apt-get install certbot python-certbot-apache
+sudo certbot --apache
+```
+#### Crontab
+
+You won't want to have to manually renew the SSL certificate every time it expires, so you should set up a cronjob to do that for you.
+
+### /etc/apache2/sites-enabled/django.conf:
 
 ```
 <VirtualHost *:80>
@@ -152,11 +189,14 @@ query = query.encode(errors='replace')
         RewriteEngine on
         RewriteCond %{HTTP_HOST} ^(www\.)?DOMAIN_NAME\.com$ [OR]
         RewriteCond %{HTTPS_HOST} ^(www\.)?DOMAIN_NAME\.com$
-        RewriteRule ^(.*)$ https://www.DOMAIN_NAME.com%{REQUEST_URI} [END,NE,R=permanent]
+        RewriteRule ^(.*)$ https://DOMAIN_NAME.com%{REQUEST_URI} [END,NE,R=permanent]
 </VirtualHost>
 
 ```
-/etc/apache2/sites-enabled/django-ssl.conf:
+
+Note: In order to get the rewrite module to actually work, go to /etc/apache2/apache2.conf and change every instance of 'AllowOverride None' to 'AllowOverride All'
+
+### /etc/apache2/sites-enabled/django-ssl.conf:
 
 ```
 
@@ -197,21 +237,3 @@ SSLCertificateKeyFile /etc/letsencrypt/live/DOMAIN_NAME.com/privkey.pem
 </VirtualHost>
 
 ```
-## 7. Certbot
-
-### Installation
-
-```
-sudo apt-get update
-sudo apt-get install software-properties-common
-sudo add-apt-repository universe
-sudo add-apt-repository ppa:certbot/certbot
-sudo apt-get update
-
-sudo apt-get install certbot python-certbot-apache
-sudo certbot --apache
-sudo certbot certonly --apache
-```
-### Certbot Crontab
-
-words
