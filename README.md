@@ -159,7 +159,7 @@ sudo systemctl start uwsgi
 
 ```
 server {
-	listen 80;
+    listen 80;
     server_name www.bucketmeadow.com;
 
     location = /favicon.ico { access_log off; log_not_found off; }
