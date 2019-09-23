@@ -15,30 +15,43 @@ sudo apt update && sudo apt upgrade
 ```
 
 ## 3. Install Things
+```
+sudo apt install build-essential python3-dev python3-pip mysql-server virtualenv virtualenvwrapper
+sudo pip3 install uwsgi
+```
 
-Packages to install:
+## 4. Environment Variables For VirtualenvWrapper
+```
+echo "export WORKON_HOME=~/Env" >> ~/.bashrc
+echo "source /usr/local/bin/virtualenvwrapper.sh" >> ~/.bashrc
+source /home/ubuntu/.bashrc
+```
 
-1. sudo apt install apache2
-2. sudo apt install libapache2-mod-wsgi-py3
-3. sudo apt install mysql-server
+(There's another one I believe, but I can't remember what it is, so I'll put that here when I try to repeat all of this and inevitably need to do it)
 
-## 4. Create Filesystem
+## 5. Create Filesystem
 
 ```
-/webapp
-	/auth
+/home/ubuntu/
+	/django/
+	/auth/
+		key.txt (for django secret key)
 		mysql.cnf
-		key.txt
-	/django
-		[django project]
-	/site
-		/logs
-		/public
-			/static
-			/media
+	/public/
+		/static/
+		/media/
 ```
 
-## 5. Fill In Auth Files
+## 6. Setup Django Project
+
+```
+cd /home/ubuntu/django && git clone https://github.com/cbfield/DJANGO_PROJECT_NAME
+cd /home/ubuntu && mkvirtualenv django
+cd /home/ubuntu/django/DJANGO_PROJECT_NAME && pip install -r requirements.txt
+python manage.py collectstatic
+```
+
+## 7. Fill In Auth Files
 
 -- mysql.cnf --
 ```
@@ -54,13 +67,16 @@ default-character-set='utf8'
 [random 50 character string]
 ```
 
-## 6. Configure MySQL
-
+## 8. MySQL Setup
 ```
-sudo mysql_secure_installation utility
+sudo mysql_secure_installation
+mysql
+	>create database 'django_database_name';
+	>grant all privileges on *.* to 'django_user'@'localhost' identified by 'django_user_password';
+	>flush privileges;
 ```
 
-Make sure the mysql installation is configured right
+Make sure the mysql installation is configured right (for Django, which has bad config for some reason)
 
 ```
 In:
@@ -95,145 +111,95 @@ query = query.encode(errors='replace')
 
 ```
 
-## 7. Configure Apache (without SSL)
+## 9. Configure uWSGI
 
-/etc/apache2/sites-enabled/django.conf:
-
+/etc/uwsgi/sites/django.ini:
 ```
-<VirtualHost *:80>
+[uwsgi]
+project = DJANGO_PROJECT_NAME
+base = /home/ubuntu
 
-        ServerName IP_ADDRESS
-        ServerAdmin MY_EMAIL_ADDRESS@gmail.com
-        DocumentRoot /var/www/html
+chdir = %(base)/django/%(project)
+home = %(base)/Env/django
+module = main.wsgi:application
 
-        ErrorLog /webapp/site/logs/error.log
-        CustomLog /webapp/site/logs/access.log combined
+master = true
+processes = 2
 
-        <Directory /webapp/django/PROJECT_NAME/main>
-                <Files wsgi.py>
-                        Require all granted
-                </Files>
-        </Directory>
-
-        alias /static /webapp/site/public/static
-        <Directory /webapp/site/public/static>
-                Require all granted
-        </Directory>
-
-        alias /media /webapp/site/public/media
-        <Directory /webapp/site/public/media>
-                Require all granted
-        </Directory>
-
-        WSGIDaemonProcess webapp python-path=/webapp/django/PROJECT_NAME python-home=/webapp/venv
-        WSGIProcessGroup webapp
-        WSGIScriptAlias / /webapp/django/PROJECT_NAME/main/wsgi.py
-
-</VirtualHost>
-
-```
-## 8. Configure Apache (with SSL)
-
-Attaching a domain name is required to get an SSL certificate. To attach the domain name, just create an A record from the domain name to the IP address of the application.
-
-To get HTTPS working, first create the django.conf file described above. You can confirm that you have configured Apache correctly by adding the IP address of the application to ALLOWED\_HOSTS in the Django project's settings.py file. In order to get the site working with SSL, you need to do first edit this file slightly, and then install an SSL certificate. I have used certbot in the past and found it very quick and easy.
-
-### File Editing
-
-```
-In /etc/apache2/sites-enabled/django.conf:
-
-Change:
-
-ServerName IP_ADDRESS
-
-To:
-
-ServerName DOMAIN_NAME.com
-ServerAlias www.DOMAIN_NAME.com
-
-Then comment out the WSGI lines (registering the SSL cert will fail if you don't)
+socket = %(base)/Env/django/%(project).sock
+chmod-socket = 666
+vacuum = true
 ```
 
-### Certbot
+/etc/systemd/system/uwsgi.service:
+```
+[Unit]
+Description=uWSGI Emperor service
+After=syslog.target
+
+[Service]
+ExecStart=/usr/local/bin/uwsgi --emperor /etc/uwsgi/sites
+Restart=always
+KillSignal=SIGQUIT
+Type=notify
+StandardError=syslog
+NotifyAccess=all
+
+[Install]
+WantedBy=multi-user.target
+```
+```
+sudo systemctl daemon-reload
+sudo systemctl start uwsgi
+```
+
+## 10. Configure Nginx
+
+/etc/nginx/sites-available:
+
+```
+server {
+	listen 80;
+    server_name www.bucketmeadow.com;
+
+    location = /favicon.ico { access_log off; log_not_found off; }
+    location /static/ {
+        root /home/ubuntu/django/DJANGO_PROJECT_NAME;
+    }
+
+    location / {
+        include         uwsgi_params;
+        uwsgi_pass      unix:/home/ubuntu/Env/django/DJANGO_PROJECT_NAME.sock;
+    }
+}
+
+server {
+    listen 80;
+    listen 443 ssl;
+    server_name bucketmeadow.com;
+    return 301 https://www.bucketmeadow.com$request_uri;
+}
+```
+```
+sudo ln -s /etc/nginx/sites-available/sample /etc/nginx/sites-enabled
+nginx -t (to test config)
+sudo systemctl restart nginx
+```
+
+## 11. Certbot
 
 #### Installation
 
 ```
-sudo apt-get update
-sudo apt-get install software-properties-common
+sudo apt update
+sudo apt install software-properties-common
 sudo add-apt-repository universe
 sudo add-apt-repository ppa:certbot/certbot
-sudo apt-get update
+sudo apt update
 
-sudo apt-get install certbot python-certbot-apache
-sudo certbot --apache
+sudo apt install certbot python3-certbot-nginx
+sudo certbot --nginx
 ```
 #### Crontab
 
 You won't want to have to manually renew the SSL certificate every time it expires, so you should set up a cronjob to do that for you.
-
-### /etc/apache2/sites-enabled/django.conf:
-
-```
-<VirtualHost *:80>
-
-        ServerName DOMAIN_NAME.com
-        ServerAlias www.DOMAIN_NAME.com
-        ServerAdmin MY_EMAIL_ADDRESS@gmail.com
-        DocumentRoot /var/www/html
-
-        ErrorLog /webapp/site/logs/error.log
-        CustomLog /webapp/site/logs/access.log combined
-
-        RewriteEngine on
-        RewriteCond %{HTTP_HOST} ^(www\.)?DOMAIN_NAME\.com$ [OR]
-        RewriteCond %{HTTPS_HOST} ^(www\.)?DOMAIN_NAME\.com$
-        RewriteRule ^(.*)$ https://DOMAIN_NAME.com%{REQUEST_URI} [END,NE,R=permanent]
-</VirtualHost>
-
-```
-
-Note: In order to get the rewrite module to actually work, go to /etc/apache2/apache2.conf and change every instance of 'AllowOverride None' to 'AllowOverride All'
-
-### /etc/apache2/sites-enabled/django-ssl.conf:
-
-```
-
-<VirtualHost *:443>
-
-        ServerName DOMAIN_NAME.com
-        ServerAlias www.DOMAIN_NAME.com
-        ServerAdmin MY_EMAIL_ADDRESS@gmail.com
-        DocumentRoot /var/www/html
-
-        ErrorLog /webapp/site/logs/error.log
-        CustomLog /webapp/site/logs/access.log combined
-
-        <Directory /webapp/django/PROJECT_NAME/main/>
-                <Files wsgi.py>
-                        Require all granted
-                </Files>
-        </Directory>
-
-        alias /static /webapp/site/public/static
-        <Directory /webapp/site/public/static>
-                Require all granted
-        </Directory>
-
-        alias /media /webapp/site/public/media
-        <Directory /webapp/site/public/media>
-                Require all granted
-        </Directory>
-
-        WSGIDaemonProcess webapp python-path=/webapp/django/PROJECT_NAME python-home=/webapp/venv
-        WSGIProcessGroup webapp
-        WSGIScriptAlias / /webapp/django/PROJECT_NAME/jkd/wsgi.py
-
-
-Include /etc/letsencrypt/options-ssl-apache.conf
-SSLCertificateFile /etc/letsencrypt/live/DOMAIN_NAME.com/fullchain.pem
-SSLCertificateKeyFile /etc/letsencrypt/live/DOMAIN_NAME.com/privkey.pem
-</VirtualHost>
-
-```
