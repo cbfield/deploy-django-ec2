@@ -44,7 +44,7 @@ source /home/ubuntu/.bashrc
 
 ```
 cd /home/ubuntu/django && git clone https://github.com/cbfield/DJANGO_PROJECT_NAME
-cd /home/ubuntu && mkvirtualenv django
+cd /home/ubuntu && mkvirtualenv django --python=/usr/bin/python3
 cd /home/ubuntu/django/DJANGO_PROJECT_NAME && pip install -r requirements.txt
 python manage.py collectstatic
 ```
