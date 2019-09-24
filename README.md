@@ -23,11 +23,9 @@ sudo pip3 install uwsgi
 ## 4. Environment Variables For VirtualenvWrapper
 ```
 echo "export WORKON_HOME=~/Env" >> ~/.bashrc
-echo "source /usr/local/bin/virtualenvwrapper.sh" >> ~/.bashrc
+echo "source /usr/share/virtualenvwrapper/virtualenvwrapper.sh" >> ~/.bashrc
 source /home/ubuntu/.bashrc
 ```
-
-(There's another one I believe, but I can't remember what it is, so I'll put that here when I try to repeat all of this and inevitably need to do it)
 
 ## 5. Create Filesystem
 
