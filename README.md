@@ -46,7 +46,6 @@ source /home/ubuntu/.bashrc
 cd /home/ubuntu/django && git clone https://github.com/cbfield/DJANGO_PROJECT_NAME
 cd /home/ubuntu && mkvirtualenv django --python=/usr/bin/python3
 cd /home/ubuntu/django/DJANGO_PROJECT_NAME && pip install -r requirements.txt
-python manage.py collectstatic
 ```
 Make sure the mysql installation is configured right (for Django, which has bad config for some reason)
 
@@ -83,6 +82,9 @@ query = query.encode(errors='replace')
 
 ```
 
+```
+cd /home/ubuntu/django/DJANGO_PROJECT_NAME && python manage.py collectstatic
+```
 ## 7. Fill In Auth Files
 
 -- mysql.cnf --
