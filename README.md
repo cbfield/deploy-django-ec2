@@ -48,32 +48,6 @@ cd /home/ubuntu && mkvirtualenv django --python=/usr/bin/python3
 cd /home/ubuntu/django/DJANGO_PROJECT_NAME && pip install -r requirements.txt
 python manage.py collectstatic
 ```
-
-## 7. Fill In Auth Files
-
--- mysql.cnf --
-```
-[client]
-database='DATABASE_NAME'
-user='USERNAME'
-password='PASSWORD'
-default-character-set='utf8'
-```
-
--- key.txt --
-```
-[random 50 character string]
-```
-
-## 8. MySQL Setup
-```
-sudo mysql_secure_installation
-mysql
-	>create database django_database_name;
-	>grant all privileges on *.* to 'django_user'@'localhost' identified by 'django_user_password';
-	>flush privileges;
-```
-
 Make sure the mysql installation is configured right (for Django, which has bad config for some reason)
 
 ```
@@ -107,6 +81,31 @@ with:
 
 query = query.encode(errors='replace')
 
+```
+
+## 7. Fill In Auth Files
+
+-- mysql.cnf --
+```
+[client]
+database='DATABASE_NAME'
+user='USERNAME'
+password='PASSWORD'
+default-character-set='utf8'
+```
+
+-- key.txt --
+```
+[random 50 character string]
+```
+
+## 8. MySQL Setup
+```
+sudo mysql_secure_installation
+mysql
+	>create database django_database_name;
+	>grant all privileges on *.* to 'django_user'@'localhost' identified by 'django_user_password';
+	>flush privileges;
 ```
 
 ## 9. Configure uWSGI
