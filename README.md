@@ -16,7 +16,7 @@ sudo apt update && sudo apt upgrade
 
 ## 3. Install Things
 ```
-sudo apt install build-essential python3-dev python3-pip mysql-server virtualenv virtualenvwrapper
+sudo apt install build-essential python3-dev python3-pip mysql-server virtualenv virtualenvwrapper nginx
 sudo pip3 install uwsgi
 ```
 
