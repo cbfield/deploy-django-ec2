@@ -69,7 +69,7 @@ default-character-set='utf8'
 ```
 sudo mysql_secure_installation
 mysql
-	>create database 'django_database_name';
+	>create database django_database_name;
 	>grant all privileges on *.* to 'django_user'@'localhost' identified by 'django_user_password';
 	>flush privileges;
 ```
