@@ -154,6 +154,10 @@ sudo systemctl start uwsgi
 
 ## 10. Configure Nginx
 
+```
+cd /etc/nginx/sites-available && sudo rm default
+```
+
 /etc/nginx/sites-available:
 
 ```
