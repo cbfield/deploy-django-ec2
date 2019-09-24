@@ -156,9 +156,10 @@ sudo systemctl start uwsgi
 
 ```
 cd /etc/nginx/sites-available && sudo rm default
+cd /etc/nginx/sites-enabled && sudo rm default
 ```
 
-/etc/nginx/sites-available:
+/etc/nginx/sites-available/django:
 
 ```
 server {
@@ -184,8 +185,8 @@ server {
 }
 ```
 ```
-sudo ln -s /etc/nginx/sites-available/sample /etc/nginx/sites-enabled
-nginx -t (to test config)
+sudo ln -s /etc/nginx/sites-available/django /etc/nginx/sites-enabled
+sudo nginx -t (to test config)
 sudo systemctl restart nginx
 ```
 
