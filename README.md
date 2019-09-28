@@ -1,12 +1,6 @@
 # EC2 Web Application Deployment Playbook
 
-This document (work in progress) is meant to be a documentation of the full process of deploying an application to an ec2 node on AWS
-
 ## 1. Deploy The Server
-
-Later this will include some indication of how to do this programmatically, with the expectation that it will eventually be automated.
-
-For now, just deploy a new ubuntu 18.04 instance
 
 ## 2. Update
 
